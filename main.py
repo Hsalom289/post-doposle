@@ -1,9 +1,10 @@
+import os
 from telegram import Update, InputMediaPhoto
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackContext
-import os
+from io import BytesIO
 
-# Bot tokeningiz
-TOKEN = '5233146018:AAGT9G38QFreHSINeBOVOJZbpnW6Jq7YzTg'
+# BOT TOKENINGIZNI BU YERGA YOZING
+TOKEN = "5233146018:AAGT9G38QFreHSINeBOVOJZbpnW6Jq7YzTg"
 
 # Yangi matn (siz ko'rsatgan matn)
 CAPTION_TEXT = """
@@ -21,12 +22,14 @@ TEMP_FOLDER = "temp_images"
 os.makedirs(TEMP_FOLDER, exist_ok=True)
 
 async def start(update: Update, context: CallbackContext):
+    """ /start buyrug‘ini bajarganda ishlaydi """
     await update.message.reply_text("Botga rasmlar yuboring, ularni 2 ta qilib post qiladi!")
 
 async def handle_post(update: Update, context: CallbackContext):
+    """ Rasm qabul qilib, har 2 ta bo‘lganda post qiladi """
     # Rasmni yuklab olish
     photo_file = await update.message.photo[-1].get_file()
-    file_path = os.path.join(TEMP_FOLDER, f"{update.update_id}.jpg")
+    file_path = os.path.join(TEMP_FOLDER, f"{update.message.message_id}.jpg")
     await photo_file.download_to_drive(file_path)
 
     # Rasmlar ro‘yxatini saqlash
@@ -34,7 +37,7 @@ async def handle_post(update: Update, context: CallbackContext):
         context.user_data["photos"] = []
     context.user_data["photos"].append(file_path)
 
-    # Har 2 ta rasm yuborilganda post qilish
+    # Har 2 ta rasm yig‘ilganda post qilish
     while len(context.user_data["photos"]) >= 2:
         photos_to_send = context.user_data["photos"][:2]  # 2 ta rasm olish
         context.user_data["photos"] = context.user_data["photos"][2:]  # Qolganlarini saqlash
@@ -53,7 +56,7 @@ async def handle_post(update: Update, context: CallbackContext):
             os.remove(file_path)
 
 def main():
-    # Botni yaratish
+    """ Botni ishga tushirish """
     application = ApplicationBuilder().token(TOKEN).build()
 
     # Handlerlarni qo'shish
