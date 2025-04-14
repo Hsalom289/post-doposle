@@ -7,7 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.enums import ParseMode
 
-TOKEN = '7596912191:AAGTup9GbxIe0m8Ex6pJqKZhfnvRK2L1WAY'
+TOKEN = '5233146018:AAHaX8HrPm0-Pxmhti-OoewN26ZfvlVoZpo'
 MUHAMMAD_ISKANDAROV_ID = 7807493773
 
 bot = Bot(token=TOKEN)
