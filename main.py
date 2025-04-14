@@ -1,166 +1,70 @@
 import os
-from aiogram import Bot, Dispatcher, types, F
-from aiogram.filters import Command
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
-from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
-from aiogram.enums import ParseMode
+from telegram import Update, InputMediaPhoto
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackContext
+from io import BytesIO
 
-TOKEN = '5233146018:AAHaX8HrPm0-Pxmhti-OoewN26ZfvlVoZpo'
-MUHAMMAD_ISKANDAROV_ID = 7807493773
+# BOT TOKENINGIZNI BU YERGA YOZING
+TOKEN = "5233146018:AAHaX8HrPm0-Pxmhti-OoewN26ZfvlVoZpo"
 
-bot = Bot(token=TOKEN)
-dp = Dispatcher()
+# Yangi matn (siz ko'rsatgan matn)
+CAPTION_TEXT = """
+✨ Buyurtmalar qabul qilinmoqda! ✨ ✅✅
 
-class Form(StatesGroup):
-    waiting_for_question = State()
-    waiting_for_reply = State()
+📩 Lich : @errordeveloper
 
-@dp.message(Command("start"))
-async def start(message: types.Message):
-    user = message.from_user
-    
-    if user.id == MUHAMMAD_ISKANDAROV_ID:
-        await message.answer("Salom, nma gap boshliq?")
-        return
-    
-    inline_keyboard = InlineKeyboardBuilder()
-    inline_keyboard.add(InlineKeyboardButton(
-        text="Adminga Savol berish", 
-        callback_data="ask_question"
-    ))
-    
-    reply_keyboard = ReplyKeyboardBuilder()
-    reply_keyboard.add(
-        KeyboardButton(text="Narxlar"),
-        KeyboardButton(text="Isbot uchun")
-    )
-    reply_keyboard.adjust(2)
-    
-    await message.answer(
-        f"Salom, {user.first_name}! 😊\n"
-        "Adminga savol berish uchun quyidagi knopkani bosing:",
-        reply_markup=inline_keyboard.as_markup()
-    )
-    
-    await message.answer(
-        "Quyidagi knopkalardan birini tanlang:",
-        reply_markup=reply_keyboard.as_markup(resize_keyboard=True)
-    )
+📞 Aloqa uchun: +998507710826 ☎️
 
-@dp.message(F.text == "Narxlar")
-async def show_prices(message: types.Message):
-    await message.answer(
-        "Narxlar❕\n\n"
-        "1000 ta 50 ming (aralash)👥\n"
-        "1000 ta 55 ming (faqat ayollar)👩\n\n"
-        "ESLATMA📌\n"
-        "BITTA GURUHGA 24 SOAT ICHIDA 5 MINGTA ODAM QO'SHSA BO'LADI\n\n"
-        "5MINGTA QUSHTIRGANLAR UCHUN SKITKA BOR✅\n\n"
-        "ADMIN 👤@Muhammad_iskandarov"
-    )
+🌍 O‘zingiz xohlagan viloyat va kerakli auditoriyani tanlab, guruhingizga faqat maqsadli odamlarni qo‘shib beramiz!😊
+"""
 
-@dp.message(F.text == "Isbot uchun")
-async def show_proof(message: types.Message):
-    await message.answer(
-        "ISBOT GURUHI! 🤖\n"
-        "@Odamqushishhizmatil\n"
-        "@Odam_QUSHlSH\n\n"
-        "SHAXSIY AKKAUNTIM👇🏻\n"
-        "@Muhammad_iskandarov\n\n"
-        "TELEFON RAQAMIM\n"
-        "+998 93 311 15 29 📱\n\n"
-        "BUNDAN BOSHQA AKKAUNT VA NOMERIM YUQ ALDANIB QOLMANG‼️",
-        parse_mode=ParseMode.HTML
-    )
+# Rasmlarni saqlash uchun vaqtinchalik papka
+TEMP_FOLDER = "temp_images"
+os.makedirs(TEMP_FOLDER, exist_ok=True)
 
-@dp.callback_query(F.data == "ask_question")
-async def ask_question(callback: types.CallbackQuery, state: FSMContext):
-    await callback.answer()
-    await callback.message.answer("Savolingizni yozing:")
-    await state.set_state(Form.waiting_for_question)
+async def start(update: Update, context: CallbackContext):
+    """ /start buyrug‘ini bajarganda ishlaydi """
+    await update.message.reply_text("Botga rasmlar yuboring, ularni 2 ta qilib post qiladi!")
 
-@dp.message(Form.waiting_for_question)
-async def handle_question(message: types.Message, state: FSMContext):
-    user_message = message.text
-    if len(user_message.strip()) < 5:
-        await message.answer("Savolingizni to'liq va aniq yozing!")
-        return
-    
-    user = message.from_user
-    
-    try:
-        keyboard = InlineKeyboardBuilder()
-        keyboard.add(InlineKeyboardButton(
-            text="Foydalanuvchiga javob yozish", 
-            callback_data=f"reply_to_{user.id}"
-        ))
-        
-        if user.username:
-            username_display = f"@{user.username}"
-        else:
-            username_display = f'<a href="tg://user?id={user.id}">Foydalanuvchi lichkasi</a>'
-        
-        await bot.send_message(
-            chat_id=MUHAMMAD_ISKANDAROV_ID,
-            text=f"Yangi savol!\n\nFoydalanuvchi: {user.first_name} (ID: {user.id})\nUsername: {username_display}\n\nXabar:\n{user_message}",
-            reply_markup=keyboard.as_markup(),
-            parse_mode=ParseMode.HTML
-        )
-        await message.answer("Savolingiz adminga yuborildi, javobni kuting!")
-        await state.clear()
-    except Exception as e:
-        await message.answer(f"Xatolik: {str(e)}")
+async def handle_post(update: Update, context: CallbackContext):
+    """ Rasm qabul qilib, har 2 ta bo‘lganda post qiladi """
+    # Rasmni yuklab olish
+    photo_file = await update.message.photo[-1].get_file()
+    file_path = os.path.join(TEMP_FOLDER, f"{update.message.message_id}.jpg")
+    await photo_file.download_to_drive(file_path)
 
-@dp.callback_query(F.data.startswith("reply_to_"))
-async def handle_reply_button(callback: types.CallbackQuery, state: FSMContext):
-    if callback.from_user.id != MUHAMMAD_ISKANDAROV_ID:
-        await callback.answer(f"Bu funksiya faqat admin uchun! Sizning ID'ingiz: {callback.from_user.id}")
-        return
-    
-    user_id = int(callback.data.split('_')[-1])
-    await state.update_data(reply_to_user_id=user_id)
-    
-    await callback.answer()
-    await callback.message.answer(f"Foydalanuvchi (ID: {user_id}) ga yuboriladigan javobingizni yozing:")
-    await state.set_state(Form.waiting_for_reply)
+    # Rasmlar ro‘yxatini saqlash
+    if "photos" not in context.user_data:
+        context.user_data["photos"] = []
+    context.user_data["photos"].append(file_path)
 
-@dp.message(Form.waiting_for_reply)
-async def handle_admin_reply(message: types.Message, state: FSMContext):
-    if message.from_user.id != MUHAMMAD_ISKANDAROV_ID:
-        return
-    
-    data = await state.get_data()
-    if 'reply_to_user_id' not in data:
-        await message.answer("Javob yuborish uchun foydalanuvchi tanlanmagan.")
-        return
-    
-    reply_message = message.text
-    user_chat_id = data['reply_to_user_id']
-    
-    try:
-        await bot.send_message(
-            chat_id=user_chat_id,
-            text=f"Admin javobi:\n\n{reply_message}"
-        )
-        await bot.send_message(
-            chat_id=MUHAMMAD_ISKANDAROV_ID,
-            text=f"Javob foydalanuvchiga (ID: {user_chat_id}) yuborildi!"
-        )
-    except Exception as e:
-        await message.answer(f"Xatolik: {str(e)}")
-        return
-    
-    await state.clear()
+    # Har 2 ta rasm yig‘ilganda post qilish
+    while len(context.user_data["photos"]) >= 2:
+        photos_to_send = context.user_data["photos"][:2]  # 2 ta rasm olish
+        context.user_data["photos"] = context.user_data["photos"][2:]  # Qolganlarini saqlash
 
-@dp.message()
-async def handle_other_messages(message: types.Message):
-    await message.answer("Iltimos, adminga savol berish uchun matndagi 'Adminga Savol berish' knopkasini bosing yoki pastdagi knopkalardan birini tanlang!")
+        # Media guruhini yaratish
+        media_group = [
+            InputMediaPhoto(open(photos_to_send[0], 'rb')),
+            InputMediaPhoto(open(photos_to_send[1], 'rb'), caption=CAPTION_TEXT)
+        ]
 
-async def main():
-    await dp.start_polling(bot)
+        # Media guruhini yuborish
+        await update.message.reply_media_group(media=media_group)
 
-if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+        # Fayllarni tozalash
+        for file_path in photos_to_send:
+            os.remove(file_path)
+
+def main():
+    """ Botni ishga tushirish """
+    application = ApplicationBuilder().token(TOKEN).build()
+
+    # Handlerlarni qo'shish
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.PHOTO, handle_post))
+
+    # Botni ishga tushirish
+    application.run_polling()
+
+if __name__ == '__main__':
+    main()
