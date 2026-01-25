@@ -10,7 +10,7 @@ TOKEN = "5233146018:AAHaX8HrPm0-Pxmhti-OoewN26ZfvlVoZpo"
 CAPTION_TEXT = """
 ✨ Buyurtmalar qabul qilinmoqda! ✨ ✅✅
 
-📩 Lich : @errordeveloper
+📩 Lich : https://t.me/doniyor_rakhimovv
 
 📞 Aloqa uchun: +998507710826 ☎️
 
@@ -68,3 +68,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
